@@ -8,8 +8,10 @@
 <body>
     <main>
         <form method="post" action="/login">
-            <input type = "text" name = "name" placeholder="Name" />
+            
             <input type = "email" name = "email" placeholder="Email" />
+            <input type = "text" name = "password" placeholder="Password" />
+            <p> <%= locals.name %></p>
             <button type = "submit" >Login</button>
         </form>
     </main>
