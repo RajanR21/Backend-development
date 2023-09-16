@@ -83,7 +83,7 @@ app.post("/login", async (req, res) => {
     const { email, password } = req.body;
     let userExist = await Message.findOne({ email });
 
-    if (!userExist) return res.render("login", { name: "User not found" });
+    if (!userExist) return res.redirect("/register");
 
     let isSamePass = await bcrypt.compare(password, userExist.password);
 
