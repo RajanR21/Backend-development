@@ -95,7 +95,7 @@ app.post("/login", async (req, res) => {
             httpOnly: true,
             expires: new Date(Date.now() + 60 * 1000),
         });
-        res.render("logout", { name: userExist.name });
+        res.redirect("/image");
     }
 });
 
