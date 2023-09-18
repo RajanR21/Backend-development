@@ -10,9 +10,16 @@ import fs from "fs";
 
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
+import cors from 'cors';
+
+
+
+// ... (the rest of your code)
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+
+
 // Mongoose connection
 mongoose.connect("mongodb://127.0.0.1:27017/backend", {
     useNewUrlParser: true,
@@ -22,8 +29,9 @@ mongoose.connect("mongodb://127.0.0.1:27017/backend", {
 
 // Define a schema for storing messages
 const messageSchema = new mongoose.Schema({
-    name: String,
+    username: String,
     email: String,
+    username: String,
     password: String,
 });
 
@@ -31,7 +39,7 @@ const Message = mongoose.model("Message", messageSchema);
 
 // Define a schema for storing images
 const imgSchema = new mongoose.Schema({
-    name: String,
+    username: String,
     desc: String,
     img: {
         data: Buffer,
@@ -45,6 +53,9 @@ const app = express();
 app.set('view engine', 'ejs');
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
+
+app.use(cors());
+
 
 app.get("/", async (req, res, next) => {
     const { token } = req.cookies
@@ -80,8 +91,8 @@ app.get("/logout", (req, res) => {
 });
 
 app.post("/login", async (req, res) => {
-    const { email, password } = req.body;
-    let userExist = await Message.findOne({ email });
+    const { username, password } = req.body;
+    let userExist = await Message.findOne({username});
 
     if (!userExist) return res.redirect("/register");
 
@@ -95,22 +106,24 @@ app.post("/login", async (req, res) => {
             httpOnly: true,
             expires: new Date(Date.now() + 60 * 1000),
         });
-        res.redirect("/image");
+
+        res.redirect("http://localhost:5003/");
     }
 });
 
 app.post("/register", async (req, res) => {
-    const { name, email, password } = req.body;
-    let userExist = await Message.findOne({ email });
+    const { username, email, password } = req.body;
+    let userExist = await Message.findOne({ username });
 
     if (userExist) {
+        alert("you are an already registered user, redirecting to Login page !")
         return res.redirect("/login");
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
     await Message.create({
-        "name": name,
+        "username": username,
         "email": email,
         "password": hashedPassword,
     });
@@ -165,9 +178,13 @@ app.post('/image', upload.single('image'), (req, res) => {
             res.status(500).send("Internal Server Error");
         });
 });
+// ... (your other middleware and routes)
 
-app.listen(5000, err => {
+
+
+
+app.listen(5002, err => {
     if (err)
         throw err;
-    console.log('Server listening on port', 5000);
+    console.log('Server listening on port', 5002);
 });
