@@ -39,8 +39,8 @@ const Message = mongoose.model("Message", messageSchema);
 
 // Define a schema for storing images
 const imgSchema = new mongoose.Schema({
-    username: String,
-    desc: String,
+   
+    email: String,
     img: {
         data: Buffer,
         contentType: String
@@ -144,8 +144,11 @@ var storage = multer.diskStorage({
 });
 
 var upload = multer({ storage: storage });
-
+var email;
 app.get('/image', (req, res) => {
+    email = req.query.email;
+    console.log("printing email : ",email);
+
     ImgModel.find({})
         .then((data, err) => {
             if (err) {
@@ -159,10 +162,13 @@ app.get('/image', (req, res) => {
         });
 });
 
+// Access the currentURL variable from the global scope
 app.post('/image', upload.single('image'), (req, res) => {
+    
     var obj = {
-        name: req.body.name,
-        desc: req.body.desc,
+        //name: req.body.name,
+        email: email,
+        
         img: {
             data: fs.readFileSync(path.join(__dirname + '/uploads/' + req.file.filename)),
             contentType: 'image/png'
