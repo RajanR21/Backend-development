@@ -1,113 +1,118 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-	<meta charset="UTF-8" />
-	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-	<title>Image Uploading</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Image Uploading</title>
 </head>
 
 <body>
-	<h1>To Upload Image on mongoDB</h1>
-	<hr />
-	<div>
-	<form action="/image" method="POST" enctype="multipart/form-data">
-		<div>
-		<label for="name">Image Title</label>
-		<input
-			type="text"
-			id="name"
-			placeholder="Name"
-			value=""
-			name="name"
-			required
-		/>
-		</div>
-		<div>
-		<label for="desc">Image Description</label>
-		<textarea
-			id="desc"
-			name="desc"
-			value=""
-			rows="2"
-			placeholder="Description"
-			required
-		>
-		</textarea>
-		</div>
-		<div>
-		<label for="image">Upload Image</label>
-		<input type="file" id="image" name="image" value="" required />
-		</div>
-		<div>
-		<button type="submit">Submit</button>
-		</div>
-	</form>
-	</div>
+    <h1>To Upload Image on mongoDB</h1>
+    <hr />
+    <form id="imageForm" enctype="multipart/form-data">
+        <div>
+            <label for="image">Upload Image</label>
+            <input type="file" id="image" name="image" required />
+        </div>
+        <div>
+            <button type="submit">Submit</button>
+        </div>
+    </form>
+    </div>
 
-	<hr />
+    <hr />
 
-	<h1>Uploaded Images</h1>
-	<div>
-	<% items.forEach(function(image) { %>
-	<div>
-		<div>
-		<img
-			src="data:image/<%=image.img.contentType%>;base64,
-					<%=image.img.data.toString('base64')%>"
-		/>
-		<div>
-			<h5><%= image.name %></h5>
+    <h1>Uploaded Images</h1>
+    <!-- <div>
+        <% items.forEach(function(image) { %>
+        <div>
+            <div>
+                <img
+                    src="data:image/<%=image.img.contentType%>;base64,
+                    <%=image.img.data.toString('base64')%>"
+                />
+                
+            </div>
+        </div>
+        <% }) %>
+    </div> -->
 
-			<p><%= image.desc %></p>
-		</div>
-		</div>
-	</div>
-	<% }) %>
-	</div>
-</body>
- <script>
-    // Get the current URL
-   // window.currentURL = window.location.href;
-
-    // Make an HTTP POST request to the server with the URL data
-    // fetch('/image', {
-    //     method: 'POST',
-    //     headers: {
-    //         'Content-Type': 'application/json',
-    //     },
-    //     body: JSON.stringify({ currentURL }),
-    // })
-    //     .then(response => {
-    //         // Handle the server's response as needed
-	// 		console.log("frontend");
-	// 		console.log(currentURL);
-    //     })
-    //     .catch(error => {
-    //         console.error('Error:', error);
-    //     });
-</script> 
-</html>
+    <!-- Display decrypted image when available -->
+    <div id = 'image-container'></div>
 
 
-<!-- <script>
-    // Get the current URL
-    const currentURL = window.location.href;
+    <!-- Input field for captcha verification -->
+    <div>
+        <label for="captchaInput">Enter Captcha:</label>
+        <input
+            type="text"
+            id="captchaInput"
+            placeholder="Enter Captcha"
+            value=""
+            name="captchaInput"
+            required
+        />
+        <button onclick="verifyCaptcha()">Verify Captcha</button>
+        <div id="captchaAlert" style="display: none;"></div>
+    </div>
 
-    // Make an HTTP POST request to the server with the URL data
-    fetch('/image', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ currentURL }),
-    })
-        .then(response => {
-            // Handle the server's response as needed
-			console.log("frontend");
-			console.log(currentURL);
-        })
-        .catch(error => {
-            console.error('Error:', error);
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const imageForm = document.getElementById('imageForm');
+            imageForm.addEventListener('submit', function(e) {
+                e.preventDefault(); // Prevent the default form submission
+
+                // Create a FormData object to send the form data
+                const formData = new FormData();
+
+                // Get the uploaded image file input
+                const imageInput = document.getElementById('image');
+                const imageFile = imageInput.files[0];
+
+                // Convert the image file to a buffer
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    const imageBuffer = event.target.result;
+
+                    // Append the image buffer to the FormData object
+                    formData.append('image', new Blob([new Uint8Array(imageBuffer)]));
+
+                    // Make a fetch POST request to the /image endpoint
+                    fetch('/image', {
+                        method: 'POST',
+                        body: formData,
+                    })
+                    .then(response => response.text())
+  .then(html => {
+    // Display the received HTML, which contains the img tag
+    const container = document.getElementById('image-container'); // Replace with the container where you want to display the image
+    container.innerHTML = html;
+  })
+                    .catch(error => {
+                        console.error('link proper nahi Error:', error);
+                    });
+                };
+
+                // Read the image file as an ArrayBuffer
+                reader.readAsArrayBuffer(imageFile);
+            });
         });
-</script> -->
 
+        // Function to verify captcha
+        function verifyCaptcha() {
+            const captchaInput = document.getElementById('captchaInput').value;
+            const org_otp = '<%= org_otp %>'; // Replace with the value of org_otp from the backend
+
+            if (captchaInput === org_otp) {
+                document.getElementById('captchaAlert').innerText = 'Captcha Verified!';
+                document.getElementById('captchaAlert').style.color = 'green';
+                document.getElementById('captchaAlert').style.display = 'block';
+            } else {
+                document.getElementById('captchaAlert').innerText = 'Captcha Verification Failed!';
+                document.getElementById('captchaAlert').style.color = 'red';
+                document.getElementById('captchaAlert').style.display = 'block';
+            }
+        }
+    </script>
+</body>
+</html>

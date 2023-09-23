@@ -39,8 +39,8 @@ const Message = mongoose.model("Message", messageSchema);
 
 // Define a schema for storing images
 const imgSchema = new mongoose.Schema({
-   
     email: String,
+    org_otp: String, // Add org_otp field
     img: {
         data: Buffer,
         contentType: String
@@ -89,7 +89,7 @@ app.get("/logout", (req, res) => {
     });
     res.redirect("/");
 });
-
+let globalImageData = null;
 app.post("/login", async (req, res) => {
     const { username, password } = req.body;
     let userExist = await Message.findOne({username});
@@ -145,45 +145,88 @@ var storage = multer.diskStorage({
 
 var upload = multer({ storage: storage });
 var email;
+let fetchedBuffer = null;
+
 app.get('/image', (req, res) => {
     email = req.query.email;
-    console.log("printing email : ",email);
+    console.log("printing email : ", email);
 
-    ImgModel.find({})
-        .then((data, err) => {
-            if (err) {
-                console.log(err);
+    // Find the image by email in the ImgModel database
+    ImgModel.findOne({ email })
+        .then(data => {
+            if (!data) {
+                return res.status(404).send("Image not found in db !");
             }
-            res.render('imagepage', { items: data });
+
+            const org_otp = data.org_otp; // Get org_otp from the image data
+            //console.log("mc check",data.img.data);
+            fetchedBuffer = Buffer.from(data.img.data.buffer);;
+            
+            // Fetch images for the email
+            ImgModel.find({ email })
+                .then((data, err) => {
+                    if (err) {
+                        console.log(err);
+                    }
+                    res.render('imagepage', { items: data, org_otp }); // Pass org_otp to the frontend
+                })
+                .catch(err => {
+                    console.error(err);
+                    res.status(500).send("Internal Server Error");
+                });
         })
         .catch(err => {
             console.error(err);
-            res.status(500).send("Internal Server Error");
+            res.status(500).send("Internal Server Error due to image not found");
         });
 });
+
 
 // Access the currentURL variable from the global scope
+// Assuming you have a decryption function named 'decryptImage' that takes an encrypted image buffer and returns a decrypted buffer
+
 app.post('/image', upload.single('image'), (req, res) => {
     
-    var obj = {
-        //name: req.body.name,
-        email: email,
-        
-        img: {
-            data: fs.readFileSync(path.join(__dirname + '/uploads/' + req.file.filename)),
-            contentType: 'image/png'
-        }
-    };
+    // Check if fetchedBuffer is not null (image data was fetched previously)
+    if (!fetchedBuffer) {
+        return res.status(404).send("fetched Image data not found through app post.");
+    }
+    else{
+        console.log("app.post s fetch buffer",fetchedBuffer);
+    }
 
-    ImgModel.create(obj)
-        .then(() => {
-            res.redirect('/image');
-        })
-        .catch(err => {
-            console.error(err);
-            res.status(500).send("Internal Server Error");
-        });
+    // Get the uploaded image buffer
+    const uploadedImageBuffer = fs.readFileSync(path.join(__dirname + '/uploads/' + req.file.filename));
+    console.log("yeh uploaded image", uploadedImageBuffer);
+    // Ensure both images have the same dimensions
+    
+    // if (uploadedImageBuffer.length !== fetchedBuffer.length) {
+    //     return res.status(402).send("ma chud gayi Image dimensions do not match.");
+    // }
+    // else{
+    //     console.log("fetch ki length",fetchedBuffer.length);
+    //     console.log("uploaded ki length",uploadedImageBuffer.length);
+    // }
+
+    // Perform pixel-by-pixel XOR decryption
+    let decryptedImageData = Buffer.alloc(uploadedImageBuffer.length);
+
+    for (let i = 0; i < uploadedImageBuffer.length; i++) {
+        decryptedImageData[i] = uploadedImageBuffer[i] ^ fetchedBuffer[i];
+    }
+    console.log("yeh decrypted buffer",decryptedImageData);
+    // Set the content type to 'image/png' (or appropriate format)
+//     const base64ImageDataWithPrefix = fetchedBuffer.toString('base64');
+//     //const base64ImageData = base64ImageDataWithPrefix.split(',')[1];
+//  console.log("app post s base6e string : ", base64ImageDataWithPrefix);
+// Send the base64 string as a response
+// res.send(decryptedImageData);
+const base64ImageData = `data:image/png;base64,${uploadedImageBuffer.toString('base64')}`;
+console.log("app post s ", base64ImageData);
+  // Send an HTML response with an img tag containing the image data URL
+  res.send(`<img src="${base64ImageData}" alt="Image">`);
 });
+
 // ... (your other middleware and routes)
 
 
