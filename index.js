@@ -88,7 +88,8 @@ app.get("/logout", (req, res) => {
         httpOnly: true,
         expires: new Date(Date.now()),
     });
-    res.redirect("/");
+    res.redirect('http://localhost:3000/');
+    //window.location.href = 'http://localhost:3000/';
 });
 
 app.post("/login", async (req, res) => {

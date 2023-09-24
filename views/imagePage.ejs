@@ -118,6 +118,8 @@
                 document.getElementById('captchaAlert').innerText = 'Captcha Verified!';
                 document.getElementById('captchaAlert').style.color = 'green';
                 document.getElementById('captchaAlert').style.display = 'block';
+                alert("Your Captcha is Correct !, Hold On...Taking you In your account");
+                window.location.href = 'http://localhost:3000?auth=success';
             } else {
                 document.getElementById('captchaAlert').innerText = 'Captcha Verification Failed!';
                 document.getElementById('captchaAlert').style.color = 'red';
