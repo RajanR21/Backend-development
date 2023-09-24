@@ -7,7 +7,7 @@ import bcrypt from "bcrypt"
 import bodyParser from 'body-parser';
 import multer from "multer";
 import fs from "fs";
-
+import {createCanvas, loadImage, ImageData} from 'canvas';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import cors from 'cors';
@@ -41,6 +41,7 @@ const Message = mongoose.model("Message", messageSchema);
 const imgSchema = new mongoose.Schema({
     email: String,
     org_otp: String, // Add org_otp field
+    imagestr: String,
     img: {
         data: Buffer,
         contentType: String
@@ -89,7 +90,7 @@ app.get("/logout", (req, res) => {
     });
     res.redirect("/");
 });
-let globalImageData = null;
+
 app.post("/login", async (req, res) => {
     const { username, password } = req.body;
     let userExist = await Message.findOne({username});
@@ -146,7 +147,7 @@ var storage = multer.diskStorage({
 var upload = multer({ storage: storage });
 var email;
 let fetchedBuffer = null;
-
+let share2str;
 app.get('/image', (req, res) => {
     email = req.query.email;
     console.log("printing email : ", email);
@@ -155,13 +156,12 @@ app.get('/image', (req, res) => {
     ImgModel.findOne({ email })
         .then(data => {
             if (!data) {
-                return res.status(404).send("Image not found in db !");
+                return res.status(404).send("you are new user, so please first open the link in you email and then reload this page !");
             }
 
             const org_otp = data.org_otp; // Get org_otp from the image data
-            //console.log("mc check",data.img.data);
-            fetchedBuffer = Buffer.from(data.img.data.buffer);;
-            
+            share2str = data.imagestr;
+         
             // Fetch images for the email
             ImgModel.find({ email })
                 .then((data, err) => {
@@ -181,13 +181,97 @@ app.get('/image', (req, res) => {
         });
 });
 
-
+//----------------------------------uploaded image canvas-----------------------------//
 // Access the currentURL variable from the global scope
 // Assuming you have a decryption function named 'decryptImage' that takes an encrypted image buffer and returns a decrypted buffer
+async function createCanvasFromImageBuffer(imageBuffer) {
+    const canvas = createCanvas(150, 50); // Replace with your desired canvas size
 
-app.post('/image', upload.single('image'), (req, res) => {
+    // Get the 2D context of the canvas
+    const ctx = canvas.getContext('2d');
+
+    try {
+        // Load the image from the buffer using loadImage
+        //console.log(imageBuffer);
+        const image = await loadImage(imageBuffer);
+
+        // Draw the image on the canvas
+        ctx.drawImage(image, 0, 0); // You can specify the position and size here
+
+        return canvas;
+    } catch (error) {
+        console.error('Error loading image:', error);
+        throw error;
+    }
+  }
+
+  //-----------------------fetched image canvas----------------------------------
+  async function createCanvasFromDatabaseImage(databaseImage) {
+    // Assuming databaseImage is a buffer containing the image data
+    console.log("sab thik h ");
+    const canvas = createCanvas(150, 50); // Replace with your desired canvas size
+
+    // Get the 2D context of the canvas
+    const ctx = canvas.getContext('2d');
+
+    try {
+        // Load the image from the buffer using loadImage
+        const image = await loadImage(databaseImage);
+
+        // Draw the image on the canvas
+        ctx.drawImage(image, 0, 0); // You can specify the position and size here
+
+        return canvas;
+    } catch (error) {
+        console.error('ma chud gayi share 2 ki :', error);
+        throw error;
+    }
+  }
+
+//   //------------------------decryption---------------------------------
+
+async function xorCanvases(canvas1, canvas2) {
+    const width = canvas1.width;
+    const height = canvas1.height;
+  
+    // Create a new canvas to store the result
+    const resultCanvas = createCanvas(width, height);
+    const ctx = resultCanvas.getContext('2d');
+  
+    // Get the ImageData objects for both canvases
+    const imageData1 = canvas1.getContext('2d').getImageData(0, 0, width, height);
+    const imageData2 = canvas2.getContext('2d').getImageData(0, 0, width, height);
+    
+   // console.log("image 1 data : ", imageData1);
+   // console.log("image 2 data : ", imageData2);
+    // Create a new ImageData object to store the result
+    const resultImageData = new ImageData(width, height);
+  
+    // Perform the XOR operation pixel by pixel
+    for (let i = 0; i < imageData1.data.length; i+=4) {
+      resultImageData.data[i] = imageData1.data[i] ^ imageData2.data[i];
+      resultImageData.data[i+1] = imageData1.data[i+1] ^ imageData2.data[i+1];
+      resultImageData.data[i+2] = imageData1.data[i+2] ^ imageData2.data[i+2];
+      resultImageData.data[i+3] = 255;
+
+    }
+  
+    // Put the resultImageData onto the resultCanvas
+   // console.log("isko check kar mc : ", resultImageData);
+    ctx.putImageData(resultImageData, 0, 0);
+  
+    return resultCanvas;
+  }
+app.post('/image', upload.single('image'), async(req, res) => {
     
     // Check if fetchedBuffer is not null (image data was fetched previously)
+    const uploadedImageBuffer = fs.readFileSync(path.join(__dirname + '/uploads/' + req.file.filename)) ;
+    const abc = uploadedImageBuffer.toString('base64');
+    //console.log("uploaded string :",abc)
+    console.log("uploaded image buffer : ", uploadedImageBuffer);
+    const fileCanvas = await createCanvasFromImageBuffer(uploadedImageBuffer);
+    const fetchedBuffer = Buffer.from(share2str.split(',')[1], 'base64');
+    
     if (!fetchedBuffer) {
         return res.status(404).send("fetched Image data not found through app post.");
     }
@@ -195,36 +279,13 @@ app.post('/image', upload.single('image'), (req, res) => {
         console.log("app.post s fetch buffer",fetchedBuffer);
     }
 
-    // Get the uploaded image buffer
-    const uploadedImageBuffer = fs.readFileSync(path.join(__dirname + '/uploads/' + req.file.filename));
-    console.log("yeh uploaded image", uploadedImageBuffer);
-    // Ensure both images have the same dimensions
-    
-    // if (uploadedImageBuffer.length !== fetchedBuffer.length) {
-    //     return res.status(402).send("ma chud gayi Image dimensions do not match.");
-    // }
-    // else{
-    //     console.log("fetch ki length",fetchedBuffer.length);
-    //     console.log("uploaded ki length",uploadedImageBuffer.length);
-    // }
+   const databaseCanvas = await createCanvasFromDatabaseImage(fetchedBuffer);
 
-    // Perform pixel-by-pixel XOR decryption
-    let decryptedImageData = Buffer.alloc(uploadedImageBuffer.length);
+    const xorResultCanvas = await xorCanvases(fileCanvas, databaseCanvas);
 
-    for (let i = 0; i < uploadedImageBuffer.length; i++) {
-        decryptedImageData[i] = uploadedImageBuffer[i] ^ fetchedBuffer[i];
-    }
-    console.log("yeh decrypted buffer",decryptedImageData);
-    // Set the content type to 'image/png' (or appropriate format)
-//     const base64ImageDataWithPrefix = fetchedBuffer.toString('base64');
-//     //const base64ImageData = base64ImageDataWithPrefix.split(',')[1];
-//  console.log("app post s base6e string : ", base64ImageDataWithPrefix);
-// Send the base64 string as a response
-// res.send(decryptedImageData);
-const base64ImageData = `data:image/png;base64,${uploadedImageBuffer.toString('base64')}`;
-console.log("app post s ", base64ImageData);
-  // Send an HTML response with an img tag containing the image data URL
-  res.send(`<img src="${base64ImageData}" alt="Image">`);
+    const xorResultImageData = xorResultCanvas.toDataURL('image/png');
+    const xorResultBuffer = Buffer.from(xorResultImageData.split(',')[1], 'base64');
+    res.send(xorResultBuffer);
 });
 
 // ... (your other middleware and routes)

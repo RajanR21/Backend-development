@@ -82,12 +82,23 @@
                         method: 'POST',
                         body: formData,
                     })
-                    .then(response => response.text())
-  .then(html => {
-    // Display the received HTML, which contains the img tag
-    const container = document.getElementById('image-container'); // Replace with the container where you want to display the image
-    container.innerHTML = html;
-  })
+                    .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.blob(); // Fetch the response as a blob
+                })
+                .then(blob => {
+                    // Create an Object URL for the blob
+                    const imageURL = URL.createObjectURL(blob);
+
+                    // Create an img element and set its src attribute to display the image
+                    const container = document.getElementById('image-container');
+                    const img = document.createElement('img');
+                    img.src = imageURL;
+                    container.innerHTML = ''; // Clear previous images
+                    container.appendChild(img);
+                })
                     .catch(error => {
                         console.error('link proper nahi Error:', error);
                     });
