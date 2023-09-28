@@ -1,14 +1,93 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Image Uploading</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f2f2f2;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+        h1 {
+            margin: 20px 0;
+            text-align: center;
+        }
+        form {
+            width: 100%;
+            max-width: 400px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #fff;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.2);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        label {
+            display: block;
+            margin-bottom: 10px;
+        }
+        input[type="file"] {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        button[type="submit"] {
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 18px;
+        }
+        hr {
+            margin: 20px 0;
+            border: none;
+            border-top: 1px solid #ccc;
+        }
+        #image-container {
+            text-align: center;
+            margin-top: 20px;
+        }
+        #captchaInput {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+        button[type="button"] {
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 18px;
+        }
+        #captchaAlert {
+            margin-top: 10px;
+            text-align: center;
+            font-size: 16px;
+        }
+    </style>
 </head>
-
 <body>
-    <h1>To Upload Image on mongoDB</h1>
-    <hr />
+    <h1>Upload Image From Email</h1>
     <form id="imageForm" enctype="multipart/form-data">
         <div>
             <label for="image">Upload Image</label>
@@ -18,30 +97,8 @@
             <button type="submit">Submit</button>
         </div>
     </form>
-    </div>
-
     <hr />
-
-    <h1>Uploaded Images</h1>
-    <!-- <div>
-        <% items.forEach(function(image) { %>
-        <div>
-            <div>
-                <img
-                    src="data:image/<%=image.img.contentType%>;base64,
-                    <%=image.img.data.toString('base64')%>"
-                />
-                
-            </div>
-        </div>
-        <% }) %>
-    </div> -->
-
-    <!-- Display decrypted image when available -->
-    <div id = 'image-container'></div>
-
-
-    <!-- Input field for captcha verification -->
+    <div id="image-container"></div>
     <div>
         <label for="captchaInput">Enter Captcha:</label>
         <input
@@ -52,11 +109,11 @@
             name="captchaInput"
             required
         />
-        <button onclick="verifyCaptcha()">Verify Captcha</button>
+        <button type="button" onclick="verifyCaptcha()">Verify Captcha</button>
         <div id="captchaAlert" style="display: none;"></div>
     </div>
-
     <script>
+        // Your JavaScript code here
         document.addEventListener("DOMContentLoaded", function() {
             const imageForm = document.getElementById('imageForm');
             imageForm.addEventListener('submit', function(e) {
